@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Contract & Biometric Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f4f4f9; }
+        .form-container { background: #fff; padding: 20px; border-radius: 8px; max-width: 500px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #28a745; color: white; font-size: 16px; border: none; cursor: pointer; }
+        button:hover { background: #218838; }
+        img { max-width: 150px; display: block; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>સ્ટાફ કોન્ટ્રાક્ટ અને ફિંગરપ્રિન્ટ ફોર્મ</h2>
+    
+    <label>સ્ટાફનું નામ:</label>
+    <input type="text" id="empName" placeholder="પૂરું નામ લખો" required>
+
+    <label>મોબાઈલ નંબર:</label>
+    <input type="tel" id="mobile" placeholder="મોબાઈલ નંબર લખો" required>
+
+    <label>અંગૂઠાનો ફોટો પાડો (Live Capture):</label>
+    <input type="file" id="thumbInput" accept="image/*" capture="environment" required>
+    <img id="thumbPreview" alt="Thumb Preview will appear here">
+
+    <button onclick="submitData()">ફોર્મ સબમિટ કરો અને PDF બનાવો</button>
+    <p id="statusMsg" style="font-weight: bold; color: blue;"></p>
+</div>
+
+<script>
+    let base64Image = "";
+
+    // Jevo photo padse tevu Base64 ma convert thase
+    document.getElementById('thumbInput').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64Image = e.target.result;
+                document.getElementById('thumbPreview').src = base64Image;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function submitData() {
+        const name = document.getElementById('empName').value;
+        const mobile = document.getElementById('mobile').value;
+        const msg = document.getElementById('statusMsg');
+
+        if(!name || !mobile || !base64Image) {
+            alert("કૃપા કરીને બધી જ વિગતો ભરો અને અંગૂઠાનો ફોટો પાડો!");
+            return;
+        }
+
+        msg.innerText = "প্রসেસ થઈ રહ્યું છે, રાહ જુઓ...";
+
+        const formData = {
+            name: name,
+            mobile: mobile,
+            thumbImage: base64Image
+        };
+
+        // Tamari Apps Script Web App URL ahiya muko
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbzqPzW_F1qDegtH41EYNOMjZLwuMYm5CVoyPatFlfeeSTFjUZo52s6uxp_wh6LzFYAe/exec";
+
+        fetch(webAppUrl, {
+            method: "POST",
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === "success") {
+                msg.style.color = "green";
+                msg.innerText = "સફળતાપૂર્વક PDF બની ગઈ છે!";
+                alert("ફોર્મ સબમિટ થઈ ગયું! Google Drive માં ફોલ્ડર અને PDF બની ગઈ છે.");
+                window.open(data.pdfUrl, '_blank'); // Direct PDF open karva mate
+            } else {
+                msg.style.color = "red";
+                msg.innerText = "ભૂલ આવી: " + data.message;
+            }
+        })
+        .catch(error => {
+            msg.style.color = "red";
+            msg.innerText = "Error: " + error;
+        });
+    }
+</script>
+
+</body>
+</html>
